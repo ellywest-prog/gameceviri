@@ -565,6 +565,17 @@ class TranslationSession:
                     audio_b64 = event.get("delta", "")
                     if audio_b64:
                         audio_bytes = base64.b64decode(audio_b64)
+                        
+                        # Decode to np.int16 and stretch to 90% speed (1.11x duration)
+                        audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
+                        if len(audio_array) > 0:
+                            stretched_len = int(len(audio_array) / 0.9)
+                            new_indices = np.linspace(0, len(audio_array) - 1, stretched_len)
+                            stretched_array = np.interp(
+                                new_indices, np.arange(len(audio_array)), audio_array
+                            ).astype(np.int16)
+                            audio_bytes = stretched_array.tobytes()
+
                         with self._audio_out_lock:
                             self._audio_out_buffer.extend(audio_bytes)
 
