@@ -763,6 +763,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     """Handle frontend WebSocket connection."""
+    global _hotkey_loop
+    _hotkey_loop = asyncio.get_running_loop()
+
     await ws.accept()
     session: Optional[TranslationSession] = None
     session_task: Optional[asyncio.Task] = None
