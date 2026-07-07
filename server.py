@@ -195,6 +195,7 @@ class TranslationSession:
         self._mic_stream: Optional[sd.InputStream] = None
         self._speaker_stream: Optional[sd.OutputStream] = None
         self._hang_time_task: Optional[asyncio.Task] = None
+        self._ws_lock = asyncio.Lock()  # Prevent concurrent WebSocket send races
         
         # Pre-recording lookback buffer to prevent initial syllable cutoff
         self._pre_buffer = bytearray()
@@ -626,36 +627,40 @@ class TranslationSession:
     # -- Client Communication ------------------------------------------------
 
     async def _send_status(self, state: str):
-        try:
-            await self.client_ws.send_json({"type": "status", "state": state})
-        except Exception:
-            pass
-
-    async def _send_error(self, message: str):
-        try:
-            await self.client_ws.send_json({"type": "error", "message": message})
-        except Exception:
-            pass
+        async with self._ws_lock:
+            try:
+                await self.client_ws.send_json({"type": "status", "state": state})
+            except Exception:
+                pass
 
     async def _send_transcript(self, lang: str, text: str):
-        try:
-            await self.client_ws.send_json(
-                {"type": "transcript", "lang": lang, "text": text}
-            )
-        except Exception:
-            pass
+        async with self._ws_lock:
+            try:
+                await self.client_ws.send_json(
+                    {"type": "transcript", "lang": lang, "text": text}
+                )
+            except Exception:
+                pass
+
+    async def _send_error(self, message: str):
+        async with self._ws_lock:
+            try:
+                await self.client_ws.send_json({"type": "error", "message": message})
+            except Exception:
+                pass
 
     async def _send_cost(self, minutes: float, cost_usd: float):
-        try:
-            await self.client_ws.send_json(
-                {
-                    "type": "cost",
-                    "minutes": round(minutes, 2),
-                    "cost_usd": round(cost_usd, 4),
-                }
-            )
-        except Exception:
-            pass
+        async with self._ws_lock:
+            try:
+                await self.client_ws.send_json(
+                    {
+                        "type": "cost",
+                        "minutes": round(minutes, 2),
+                        "cost_usd": round(cost_usd, 4),
+                    }
+                )
+            except Exception:
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -837,13 +842,6 @@ def _on_ptt_key_event(event: keyboard.KeyboardEvent):
         if _hotkey_loop and active_sessions:
             for session in active_sessions.values():
                 asyncio.run_coroutine_threadsafe(session.ptt_start(), _hotkey_loop)
-                # Notify frontend
-                asyncio.run_coroutine_threadsafe(
-                    session.client_ws.send_json(
-                        {"type": "ptt_global", "action": "start"}
-                    ),
-                    _hotkey_loop,
-                )
 
     elif event.event_type == keyboard.KEY_UP and _hotkey_pressed:
         _hotkey_pressed = False
@@ -851,12 +849,6 @@ def _on_ptt_key_event(event: keyboard.KeyboardEvent):
         if _hotkey_loop and active_sessions:
             for session in active_sessions.values():
                 asyncio.run_coroutine_threadsafe(session.ptt_stop(), _hotkey_loop)
-                asyncio.run_coroutine_threadsafe(
-                    session.client_ws.send_json(
-                        {"type": "ptt_global", "action": "stop"}
-                    ),
-                    _hotkey_loop,
-                )
 
 
 def start_global_hotkey():

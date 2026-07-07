@@ -218,15 +218,7 @@ function handleServerMessage(data) {
             updateCostDisplay();
             break;
 
-        case "ptt_global":
-            // Global hotkey event from Python backend
-            if (data.action === "start" && state.connected && !state.recording) {
-                state.recording = true;
-                updateUI("recording");
-            } else if (data.action === "stop" && state.recording) {
-                state.recording = false;
-            }
-            break;
+
     }
 }
 
