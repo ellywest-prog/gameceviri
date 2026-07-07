@@ -20,6 +20,8 @@ import urllib.error
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import os
+import webbrowser
 import ctypes
 import numpy as np
 import sounddevice as sd
@@ -757,6 +759,20 @@ async def test_api_key(key: str = ""):
         )
 
 
+@app.post("/api/shutdown")
+async def http_shutdown():
+    """Shutdown the server via POST request (useful before WebSocket connection is established)."""
+    log.info("🔌 HTTP Shutdown requested. Terminating server process...")
+    
+    # Run shutdown in a background thread to allow response to be returned
+    def do_shutdown():
+        time.sleep(0.5)
+        os._exit(0)
+        
+    threading.Thread(target=do_shutdown, daemon=True).start()
+    return {"status": "ok", "message": "Server shutting down"}
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -826,6 +842,14 @@ async def websocket_endpoint(ws: WebSocket):
             elif msg_type == "ptt_stop":
                 if session is not None:
                     await session.ptt_stop()
+
+            elif msg_type == "shutdown":
+                log.info("🔌 Shutdown requested. Terminating server process...")
+                if session is not None:
+                    await session.stop()
+                # Brief sleep to allow WS close packet delivery
+                await asyncio.sleep(0.5)
+                os._exit(0)
 
     except WebSocketDisconnect:
         log.info(f"Client disconnected: {session_id}")
@@ -912,12 +936,17 @@ if __name__ == "__main__":
     print("  Kapatmak icin: Ctrl+C")
     print()
 
+    # Automatically open default browser on startup after 1.5s
+    def open_browser():
+        time.sleep(1.5)
+        webbrowser.open("http://localhost:8765")
+    threading.Thread(target=open_browser, daemon=True).start()
+
     # Register global hotkey before starting server
     try:
         start_global_hotkey()
     except Exception as e:
         log.warning(f"Global hotkey kaydedilemedi: {e}")
-        log.warning("Yönetici olarak çalıştırmayı dene.")
 
     uvicorn.run(
         app,

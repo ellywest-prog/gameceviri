@@ -73,11 +73,17 @@
                 <span class="form-hint">VB-Cable Input cihazını seçin</span>
             </div>
 
-            <!-- Connect Button -->
-            <button class="btn btn-connect" id="connectBtn" disabled>
-                <span class="btn-icon">🔗</span>
-                <span class="btn-text">Bağlan</span>
-            </button>
+            <!-- Connect & Shutdown Actions -->
+            <div class="connect-actions">
+                <button class="btn btn-connect" id="connectBtn" disabled>
+                    <span class="btn-icon">🔗</span>
+                    <span class="btn-text">Bağlan</span>
+                </button>
+                <button class="btn btn-shutdown" id="shutdownBtn">
+                    <span class="btn-icon">🔌</span>
+                    <span class="btn-text">Uygulamayı Kapat</span>
+                </button>
+            </div>
             <p class="connect-hint" id="connectHint">API key, mikrofon ve çıkış cihazı seçmelisin.</p>
         </section>
 
@@ -139,6 +145,16 @@
             Apex Legends Canlı Çeviri • OpenAI Realtime API
         </div>
     </footer>
+
+    <!-- Shutdown Overlay -->
+    <div id="shutdownOverlay" class="shutdown-overlay hidden">
+        <div class="shutdown-content">
+            <span class="shutdown-icon">🔌</span>
+            <h2>Uygulama Kapatıldı</h2>
+            <p>Apex Legends Canlı Çeviri sunucusu başarıyla durduruldu.</p>
+            <p class="sub-text">Bu tarayıcı sekmesini güvenle kapatabilirsiniz.</p>
+        </div>
+    </div>
 
     <script src="/static/app.js"></script>
 </body>

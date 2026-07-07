@@ -41,6 +41,8 @@ const dom = {
     clearLog:       $("#clearLog"),
     totalTime:      $("#totalTime"),
     totalCost:      $("#totalCost"),
+    shutdownBtn:    $("#shutdownBtn"),
+    shutdownOverlay: $("#shutdownOverlay"),
 };
 
 const API_KEY_STORAGE = "apex_api_key";
@@ -466,6 +468,26 @@ function setupEventListeners() {
                 output_device: parseInt(dom.outputDevice.value),
             });
             updateUI("connecting");
+        }
+    });
+
+    // Shutdown Button
+    dom.shutdownBtn.addEventListener("click", async () => {
+        if (confirm("Uygulamayı kapatmak istediğinizden emin misiniz? Sunucu sonlandırılacaktır.")) {
+            // Show overlay blocker
+            dom.shutdownOverlay.classList.remove("hidden");
+            
+            // Try WebSocket first, fallback to HTTP POST if not connected
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                try {
+                    ws.send(JSON.stringify({ type: "shutdown" }));
+                } catch (e) {
+                    console.error("WS shutdown failed, falling back to HTTP", e);
+                    await fetch("/api/shutdown", { method: "POST" }).catch(() => {});
+                }
+            } else {
+                await fetch("/api/shutdown", { method: "POST" }).catch(() => {});
+            }
         }
     });
 
