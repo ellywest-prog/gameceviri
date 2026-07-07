@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Çeviri – Gerçek Zamanlı Ses Çevirisi</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <span class="logo-icon">🎮</span>
+            <h1 class="logo-text">Apex Çeviri</h1>
+        </div>
+        <div class="header-right">
+            <div class="connection-badge" id="connectionBadge">
+                <span class="badge-dot"></span>
+                <span class="badge-text">Bağlantı Yok</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Settings Panel -->
+        <section class="panel settings-panel" id="settingsPanel">
+            <h2 class="panel-title">
+                <span class="panel-icon">⚙️</span>
+                Ayarlar
+            </h2>
+
+            <!-- API Key -->
+            <div class="form-group">
+                <label class="form-label" for="apiKey">OpenAI API Key</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="password" 
+                        id="apiKey" 
+                        class="form-input" 
+                        placeholder="sk-..." 
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button class="input-toggle" id="toggleApiKey" type="button" title="Göster/Gizle">
+                        👁️
+                    </button>
+                </div>
+                <div class="api-test-row">
+                    <button class="btn btn-test" id="testApiKey" type="button" disabled>
+                        🔑 API Key Test Et
+                    </button>
+                    <span class="api-test-result" id="apiTestResult"></span>
+                </div>
+            </div>
+
+            <!-- Input Device -->
+            <div class="form-group">
+                <label class="form-label" for="inputDevice">🎤 Giriş Mikrofonu</label>
+                <select id="inputDevice" class="form-select">
+                    <option value="">Yükleniyor...</option>
+                </select>
+            </div>
+
+            <!-- Output Device -->
+            <div class="form-group">
+                <label class="form-label" for="outputDevice">🔊 Çıkış Cihazı (Sanal Mikrofon)</label>
+                <select id="outputDevice" class="form-select">
+                    <option value="">Yükleniyor...</option>
+                </select>
+                <span class="form-hint">VB-Cable Input cihazını seçin</span>
+            </div>
+
+            <!-- Connect Button -->
+            <button class="btn btn-connect" id="connectBtn" disabled>
+                <span class="btn-icon">🔗</span>
+                <span class="btn-text">Bağlan</span>
+            </button>
+            <p class="connect-hint" id="connectHint">API key, mikrofon ve çıkış cihazı seçmelisin.</p>
+        </section>
+
+        <!-- Translation Panel -->
+        <section class="panel translation-panel">
+            <h2 class="panel-title">
+                <span class="panel-icon">🌐</span>
+                Çeviri
+            </h2>
+
+            <!-- Status Display -->
+            <div class="status-display" id="statusDisplay">
+                <div class="status-icon" id="statusIcon">⏸️</div>
+                <div class="status-text" id="statusText">Bağlantı bekleniyor...</div>
+            </div>
+
+            <!-- Push-to-Talk Button -->
+            <div class="ptt-container">
+                <button 
+                    class="ptt-button" 
+                    id="pttButton" 
+                    disabled
+                    aria-label="Konuşmak için basılı tut"
+                >
+                    <div class="ptt-ripple"></div>
+                    <div class="ptt-inner">
+                        <span class="ptt-icon">🎤</span>
+                        <span class="ptt-label">Konuşmak İçin Basılı Tut</span>
+                        <span class="ptt-sublabel">T tuşu veya butona bas</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Transcript Log -->
+            <div class="transcript-container">
+                <div class="transcript-header">
+                    <span>💬 Çeviri Geçmişi</span>
+                    <button class="btn-clear" id="clearLog" title="Temizle">🗑️</button>
+                </div>
+                <div class="transcript-log" id="transcriptLog">
+                    <div class="transcript-empty">
+                        Henüz çeviri yok. Bağlanıp konuşmaya başla!
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="cost-display">
+            <span class="cost-label">⏱️ Süre:</span>
+            <span class="cost-value" id="totalTime">0:00</span>
+            <span class="cost-separator">|</span>
+            <span class="cost-label">💰 Maliyet:</span>
+            <span class="cost-value" id="totalCost">$0.00</span>
+        </div>
+        <div class="footer-info">
+            Apex Legends Canlı Çeviri • OpenAI Realtime API
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
