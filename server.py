@@ -20,7 +20,7 @@ import urllib.error
 from contextlib import asynccontextmanager
 from typing import Optional
 
-import keyboard
+import ctypes
 import numpy as np
 import sounddevice as sd
 import websockets
@@ -837,38 +837,52 @@ async def websocket_endpoint(ws: WebSocket):
 
 
 # ---------------------------------------------------------------------------
-# Global Hotkey (T key – works even when game is in foreground)
+# Global Hotkey (T key – GetAsyncKeyState Polling to bypass Anti-Cheat)
 # ---------------------------------------------------------------------------
 _hotkey_loop: Optional[asyncio.AbstractEventLoop] = None
 _hotkey_pressed = False
 
 
-def _on_ptt_key_event(event: keyboard.KeyboardEvent):
-    """Called from keyboard hook thread on T key press/release."""
+def ptt_polling_loop():
+    """Poll the physical state of the PTT key using GetAsyncKeyState.
+    This bypasses kernel anti-cheat keyboard hook blocks (e.g. EAC).
+    """
     global _hotkey_pressed
+    user32 = ctypes.windll.user32
+    VK_T = 0x54  # Virtual Key code for 'T'
 
-    if event.event_type == keyboard.KEY_DOWN and not _hotkey_pressed:
-        _hotkey_pressed = True
-        log.info("🔑 [Global] T tuşu basıldı")
-        if _hotkey_loop and active_sessions:
-            for session in active_sessions.values():
-                asyncio.run_coroutine_threadsafe(session.ptt_start(), _hotkey_loop)
+    while True:
+        try:
+            # Check if T key is pressed (most significant bit is set)
+            is_pressed = (user32.GetAsyncKeyState(VK_T) & 0x8000) != 0
 
-    elif event.event_type == keyboard.KEY_UP and _hotkey_pressed:
-        _hotkey_pressed = False
-        log.info("🔑 [Global] T tuşu bırakıldı")
-        if _hotkey_loop and active_sessions:
-            for session in active_sessions.values():
-                asyncio.run_coroutine_threadsafe(session.ptt_stop(), _hotkey_loop)
+            if is_pressed and not _hotkey_pressed:
+                _hotkey_pressed = True
+                log.info("🔑 [Global/Poll] T tuşu basıldı")
+                if _hotkey_loop and active_sessions:
+                    for session in active_sessions.values():
+                        asyncio.run_coroutine_threadsafe(session.ptt_start(), _hotkey_loop)
+
+            elif not is_pressed and _hotkey_pressed:
+                _hotkey_pressed = False
+                log.info("🔑 [Global/Poll] T tuşu bırakıldı")
+                if _hotkey_loop and active_sessions:
+                    for session in active_sessions.values():
+                        asyncio.run_coroutine_threadsafe(session.ptt_stop(), _hotkey_loop)
+        except Exception as e:
+            log.debug(f"PTT key poll error: {e}")
+
+        time.sleep(0.015)  # 15ms poll rate (~66Hz)
 
 
 def start_global_hotkey():
-    """Register global T key hook. Runs in the main event loop's thread."""
+    """Start global PTT polling thread. Runs in background."""
     global _hotkey_loop
     _hotkey_loop = asyncio.get_event_loop()
 
-    keyboard.hook_key(PTT_KEY, _on_ptt_key_event, suppress=False)
-    log.info(f"🔑 Global hotkey kayıtlı: '{PTT_KEY.upper()}' tuşu (Push-to-Talk)")
+    t = threading.Thread(target=ptt_polling_loop, daemon=True)
+    t.start()
+    log.info(f"🔑 Anti-cheat uyumlu global PTT dinleyici baslatildi: '{PTT_KEY.upper()}' tusu")
 
 
 # ---------------------------------------------------------------------------
